@@ -1,0 +1,31 @@
+# ── Závislosti ────────────────────────────────────────────
+crm-app/node_modules/
+crm-app/.pnp
+crm-app/.pnp.js
+
+# ── Next.js build output ──────────────────────────────────
+crm-app/.next/
+crm-app/out/
+
+# ── Environment premenné (obsahujú heslá) ─────────────────
+crm-app/.env
+crm-app/.env.local
+crm-app/.env.development.local
+crm-app/.env.test.local
+crm-app/.env.production.local
+
+# ── Nahrané súbory používateľov (nie pre git) ─────────────
+crm-app/public/uploads/
+
+# ── OS & editory ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+.vscode/settings.json
+
+# ── Logy ─────────────────────────────────────────────────
+crm-app/npm-debug.log*
+crm-app/yarn-debug.log*
+crm-app/yarn-error.log*
