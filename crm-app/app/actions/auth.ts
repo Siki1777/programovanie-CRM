@@ -4,6 +4,7 @@ import bcryptjs from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
+import { log } from "console";
 
 export type LoginState = { error?: string };
 
@@ -25,6 +26,7 @@ export async function prihlasit(_prev: LoginState, formData: FormData): Promise<
   const kolega = rows[0];
   // Password check (with type safety)
   if (kolega.heslo != null) {
+    console.log("Db: " + kolega.heslo + " Input: " + heslo);
     const spravne = await bcryptjs.compare(heslo, kolega.heslo);
     if (!spravne) return { error: "Nesprávny e-mail alebo heslo." };
   }
