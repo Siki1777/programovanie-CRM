@@ -2,31 +2,29 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const url = request.nextUrl.clone();
   const maCookie = request.cookies.has('crm_kolega_id');
 
-  // Dekódujeme URL, aby sme spoľahlivo prečítali "prihlásenie" s diakritikou
-  const dekodovanaCesta = decodeURIComponent(url.pathname);
-
-  // Ignorujeme statické súbory a API, aby sme nezablokovali aplikáciu
+  // Ak ide o systémové súbory, API alebo obrázky, neriešime
   if (
-    url.pathname.startsWith('/_next') || 
-    url.pathname.includes('.') ||
-    url.pathname.startsWith('/api')
+    request.nextUrl.pathname.startsWith('/_next') || 
+    request.nextUrl.pathname.includes('.') ||
+    request.nextUrl.pathname.startsWith('/api')
   ) {
     return NextResponse.next();
   }
 
-  // 1. Ochrana dashboardu - ak nie je cookie a ide do chránenej zóny
-  if (!maCookie && !dekodovanaCesta.startsWith('/prihlásenie')) {
-    url.pathname = encodeURI('/prihlásenie');
-    return NextResponse.redirect(url);
+  // Ak NIE JE prihlásený, pustíme ho LEN na prihlasovaciu stránku
+  // Kontrolujeme iba čistý výskyt textu, aby sme obišli kódovanie diakritiky
+  const naLogine = request.nextUrl.pathname.includes('prihlas') || request.nextUrl.pathname.includes('prihl%C3%A1s');
+  
+  if (!maCookie && !naLogine) {
+    // Ak nie je prihlásený a ide inde, hodíme ho na login
+    return NextResponse.redirect(new URL('/prihlásenie', request.url));
   }
 
-  // 2. Ak je prihlásený a pokúša sa ísť znova na login, hodíme ho na dashboard
-  if (maCookie && dekodovanaCesta.startsWith('/prihlásenie')) {
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+  if (maCookie && naLogine) {
+    // Ak je prihlásený a ide na login, hodíme ho na dashboard
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
