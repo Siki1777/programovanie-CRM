@@ -30,12 +30,15 @@ export default async function DashboardLayout({
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
 
         {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
+        <Link
+          href="/dashboard"
+          className="p-6 border-b border-gray-200 hover:bg-blue-50 transition-colors block"
+        >
           <h2 className="text-lg font-bold text-blue-700 leading-tight">
             CRM<br />
-            <span className="text-sm font-normal text-gray-500">Inštalačná firma</span>
+            <span className="text-sm font-semibold text-slate-700">DomTerm.sk</span>
           </h2>
-        </div>
+        </Link>
 
         {/* Navigácia */}
         <nav className="flex-1 p-3 space-y-0.5">
