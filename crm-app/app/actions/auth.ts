@@ -23,10 +23,12 @@ export async function prihlasit(_prev: LoginState, formData: FormData): Promise<
   if (rows.length === 0 || !rows[0].heslo) return { error: "Nesprávny e-mail alebo heslo." };
 
   const kolega = rows[0];
-  const spravne = await bcryptjs.compare(heslo, kolega.heslo);
+  // Password check (with type safety)
+  if (kolega.heslo != null) {
+    const spravne = await bcryptjs.compare(heslo, kolega.heslo);
+    if (!spravne) return { error: "Nesprávny e-mail alebo heslo." };
+  }
   
-  if (!spravne) return { error: "Nesprávny e-mail alebo heslo." };
-
   const cookieStore = await cookies();
   const opts = { httpOnly: true, path: "/", sameSite: "lax" as const, maxAge: 60 * 60 * 24 * 30 };
   
