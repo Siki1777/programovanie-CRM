@@ -1,10 +1,11 @@
 import { sql } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
-import { prihlasitSa, nastavVidiFinancie } from "@/app/actions/session";
+import { nastavVidiFinancie } from "@/app/actions/session";
 import { Avatar } from "@/components/Avatar";
 import { FotoUploadButton } from "@/components/FotoUploadButton";
 import { PridatKoleguForm } from "./PridatKoleguForm";
+import { NastavHesloForm } from "./NastavHesloForm";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ type Kolega = {
   fotoUrl: string | null;
   notifikacnyKanal: string;
   vidiFinancie: boolean;
+  maHeslo: boolean;
 };
 
 export default async function NastaveniePage() {
@@ -31,7 +33,8 @@ export default async function NastaveniePage() {
       SELECT id, meno, priezvisko, email, telefon,
              foto_url          AS "fotoUrl",
              "notifikacnyKanal",
-             vidi_financie     AS "vidiFinancie"
+             vidi_financie     AS "vidiFinancie",
+             (heslo IS NOT NULL) AS "maHeslo"
       FROM kolega
       ORDER BY meno, priezvisko
     `,
@@ -44,73 +47,69 @@ export default async function NastaveniePage() {
     <div className="space-y-8 max-w-3xl">
       <h1 className="text-2xl font-bold text-gray-900">⚙️ Nastavenia</h1>
 
-      {/* ── Prepínač profilu ─────────────────────────────────────────────── */}
-      <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-gray-800 text-lg">👤 Aktívny profil</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Vyber, pod kým pracuješ. Aplikácia sa prispôsobí tvojim právam.
-          </p>
-        </div>
+      {/* ── Správa hesiel (len Admin) ─────────────────────────────────── */}
+      {jeAdmin && (
+        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-bold text-gray-800 text-lg">🔑 Správa hesiel</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Nastav alebo zmeň heslo pre každého kolegu. Každý sa potom prihlasuje sám cez{" "}
+              <span className="font-mono">/login</span>.
+            </p>
+          </div>
 
-        <div className="divide-y divide-gray-100">
-          {kolegovia.map((k) => {
-            const jeAktivny = session?.kolegaId === k.id;
-            return (
-              <div
-                key={k.id}
-                className={[
-                  "flex items-center gap-4 px-6 py-4 transition-colors",
-                  jeAktivny ? "bg-blue-50" : "hover:bg-gray-50",
-                ].join(" ")}
-              >
-                {/* Avatar + upload button */}
+          <div className="divide-y divide-gray-100">
+            {kolegovia.map((k) => (
+              <div key={k.id} className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4">
+
                 <div className="relative flex-shrink-0">
                   <Avatar
                     meno={k.meno}
                     priezvisko={k.priezvisko}
                     email={k.email}
                     fotoUrl={k.fotoUrl}
-                    size="md"
-                    className={jeAktivny ? "ring-2 ring-blue-500 ring-offset-1" : ""}
+                    size="sm"
+                    className={session?.kolegaId === k.id ? "ring-2 ring-blue-500 ring-offset-1" : ""}
                   />
-                  <FotoUploadButton typ="kolega" entityId={k.id} variant="overlay" />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-gray-900 text-base">
+                    <p className="font-semibold text-gray-900 text-sm">
                       {k.meno} {k.priezvisko}
                     </p>
                     {k.vidiFinancie && (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
-                        💶 Admin
+                        Admin
                       </span>
                     )}
-                    {jeAktivny && (
+                    {session?.kolegaId === k.id && (
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
-                        ✓ Prihlásený
+                        Ty
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-gray-400">{k.email}</p>
                 </div>
 
-                {!jeAktivny && (
-                  <form action={prihlasitSa.bind(null, k.id)}>
-                    <button
-                      type="submit"
-                      className="min-h-[44px] px-4 text-sm font-semibold border-2 border-gray-300 rounded-xl text-gray-600 hover:border-blue-400 hover:text-blue-700 transition-colors whitespace-nowrap"
-                    >
-                      Prihlásiť sa
-                    </button>
-                  </form>
-                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {k.maHeslo ? (
+                    <span className="text-xs text-gray-400">🔒 Heslo nastavené</span>
+                  ) : (
+                    <span className="text-xs text-orange-500 font-semibold">⚠ Bez hesla</span>
+                  )}
+                  <NastavHesloForm kolegaId={k.id} maHeslo={k.maHeslo} />
+                </div>
+
               </div>
-            );
-          })}
-        </div>
-      </section>
+            ))}
+          </div>
+
+          <div className="px-6 py-3 bg-amber-50 border-t border-amber-100 text-xs text-amber-700">
+            💡 Kolegovia bez nastaveného hesla sa nemôžu prihlásiť.
+          </div>
+        </section>
+      )}
 
       {/* ── Kolegovia & notifikácie ──────────────────────────────────────── */}
       <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -145,14 +144,22 @@ export default async function NastaveniePage() {
                     email={k.email}
                     fotoUrl={k.fotoUrl}
                     size="md"
+                    className={session?.kolegaId === k.id ? "ring-2 ring-blue-500 ring-offset-1" : ""}
                   />
                   <FotoUploadButton typ="kolega" entityId={k.id} variant="overlay" />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-base">
-                    {k.meno} {k.priezvisko}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900 text-base">
+                      {k.meno} {k.priezvisko}
+                    </p>
+                    {session?.kolegaId === k.id && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                        Ty
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 flex-wrap">
                     <a href={`mailto:${k.email}`} className="text-xs text-blue-600 hover:underline">
                       {k.email}

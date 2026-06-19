@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { Avatar } from "@/components/Avatar";
+import { odhlasit } from "@/app/actions/auth";
 
 const NAV_ITEMS = [
   { href: "/dashboard",     label: "Prehľad",        ikona: "📊", financna: false },
@@ -50,38 +51,41 @@ export default async function DashboardLayout({
           ))}
         </nav>
 
-        {/* Aktuálny používateľ */}
-        <div className="p-4 border-t border-gray-200">
-          {session ? (
-            <Link
-              href="/nastavenia"
-              className="flex items-center gap-2.5 hover:bg-gray-50 rounded-xl p-1.5 -m-1.5 transition-colors group"
-            >
-              <Avatar
-                meno={session.meno}
-                priezvisko={session.priezvisko}
-                email={session.email}
-                fotoUrl={session.fotoUrl}
-                size="sm"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-700 truncate leading-tight">
-                  {session.meno} {session.priezvisko}
-                </p>
-                <p className="text-xs text-gray-400 leading-tight">
-                  {vidiFinancie ? "💶 Admin" : "Technik"}
-                </p>
-              </div>
-              <span className="text-gray-300 group-hover:text-gray-500 text-sm flex-shrink-0">›</span>
-            </Link>
-          ) : (
-            <Link
-              href="/nastavenia"
-              className="flex items-center gap-2 text-xs text-blue-600 hover:underline"
-            >
-              <span className="text-base">👤</span>
-              Vybrať profil →
-            </Link>
+        {/* Aktuálny používateľ + odhlásenie */}
+        <div className="p-4 border-t border-gray-200 space-y-1">
+          {session && (
+            <>
+              <Link
+                href="/nastavenia"
+                className="flex items-center gap-2.5 hover:bg-gray-50 rounded-xl p-1.5 -m-1.5 transition-colors group"
+              >
+                <Avatar
+                  meno={session.meno}
+                  priezvisko={session.priezvisko}
+                  email={session.email}
+                  fotoUrl={session.fotoUrl}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-700 truncate leading-tight">
+                    {session.meno} {session.priezvisko}
+                  </p>
+                  <p className="text-xs text-gray-400 leading-tight">
+                    {vidiFinancie ? "💶 Admin" : "Technik"}
+                  </p>
+                </div>
+                <span className="text-gray-300 group-hover:text-gray-500 text-sm flex-shrink-0">›</span>
+              </Link>
+
+              <form action={odhlasit}>
+                <button
+                  type="submit"
+                  className="w-full text-left px-1.5 py-1 text-xs text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  ← Odhlásiť sa
+                </button>
+              </form>
+            </>
           )}
         </div>
 

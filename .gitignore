@@ -13,6 +13,7 @@ crm-app/.env.local
 crm-app/.env.development.local
 crm-app/.env.test.local
 crm-app/.env.production.local
+crm-app/.env.production
 
 # ── Nahrané súbory používateľov (nie pre git) ─────────────
 crm-app/public/uploads/
