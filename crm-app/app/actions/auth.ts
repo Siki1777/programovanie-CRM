@@ -4,7 +4,6 @@ import bcryptjs from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
-import { log } from "console";
 
 export type LoginState = { error?: string };
 
