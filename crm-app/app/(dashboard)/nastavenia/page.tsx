@@ -60,46 +60,52 @@ export default async function NastaveniePage() {
 
           <div className="divide-y divide-gray-100">
             {kolegovia.map((k) => (
-              <div key={k.id} className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4">
+              <div key={k.id} className="px-6 py-4 space-y-3">
 
-                <div className="relative flex-shrink-0">
-                  <Avatar
-                    meno={k.meno}
-                    priezvisko={k.priezvisko}
-                    email={k.email}
-                    fotoUrl={k.fotoUrl}
-                    size="sm"
-                    className={session?.kolegaId === k.id ? "ring-2 ring-blue-500 ring-offset-1" : ""}
-                  />
-                </div>
+                {/* Riadok 1: Avatar + info + stav hesla */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <Avatar
+                      meno={k.meno}
+                      priezvisko={k.priezvisko}
+                      email={k.email}
+                      fotoUrl={k.fotoUrl}
+                      size="sm"
+                      className={session?.kolegaId === k.id ? "ring-2 ring-blue-500 ring-offset-1" : ""}
+                    />
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      {k.meno} {k.priezvisko}
-                    </p>
-                    {k.vidiFinancie && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
-                        Admin
-                      </span>
-                    )}
-                    {session?.kolegaId === k.id && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
-                        Ty
-                      </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-gray-900 text-sm">
+                        {k.meno} {k.priezvisko}
+                      </p>
+                      {k.vidiFinancie && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                          Admin
+                        </span>
+                      )}
+                      {session?.kolegaId === k.id && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                          Ty
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400">{k.email}</p>
+                  </div>
+
+                  {/* Stav hesla — vpravo */}
+                  <div className="flex-shrink-0 ml-auto">
+                    {k.maHeslo ? (
+                      <span className="text-xs text-gray-400 whitespace-nowrap">🔒 Nastavené</span>
+                    ) : (
+                      <span className="text-xs text-orange-500 font-semibold whitespace-nowrap">⚠ Bez hesla</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">{k.email}</p>
                 </div>
 
-                <div className="flex items-center gap-3 flex-wrap">
-                  {k.maHeslo ? (
-                    <span className="text-xs text-gray-400">🔒 Heslo nastavené</span>
-                  ) : (
-                    <span className="text-xs text-orange-500 font-semibold">⚠ Bez hesla</span>
-                  )}
-                  <NastavHesloForm kolegaId={k.id} maHeslo={k.maHeslo} />
-                </div>
+                {/* Riadok 2: Formulár pre heslo — vždy pod menom, full-width */}
+                <NastavHesloForm kolegaId={k.id} maHeslo={k.maHeslo} />
 
               </div>
             ))}

@@ -15,70 +15,123 @@ export function NastavHesloForm({ kolegaId, maHeslo }: Props) {
     {}
   );
 
-  // Po úspechu zatvor formulár
   const uspesny = state.success && !state.error;
 
-  if (!otvoreny && !uspesny) {
+  if (uspesny) {
+    return (
+      <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+        <span className="text-green-600 text-base">✓</span>
+        <span className="text-sm text-green-700 font-semibold">Heslo bolo uložené</span>
+      </div>
+    );
+  }
+
+  if (!otvoreny) {
     return (
       <button
         onClick={() => setOtvoreny(true)}
-        className="min-h-[36px] px-3 text-xs font-semibold border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-400 hover:text-blue-700 transition-colors whitespace-nowrap"
+        className="
+          min-h-[38px] px-4
+          text-sm font-semibold
+          border-2 border-dashed border-gray-300 rounded-xl
+          text-gray-500 hover:border-blue-400 hover:text-blue-700
+          transition-colors
+        "
       >
         {maHeslo ? "Zmeniť heslo" : "Nastaviť heslo"}
       </button>
     );
   }
 
-  if (uspesny) {
-    return (
-      <span className="text-xs text-green-700 font-semibold bg-green-100 px-3 py-1.5 rounded-xl">
-        ✓ Heslo uložené
-      </span>
-    );
-  }
-
   return (
-    <form action={action} className="flex flex-col gap-2 w-full sm:w-auto">
+    <form
+      action={action}
+      className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-4"
+    >
       <input type="hidden" name="kolegaId" value={kolegaId} />
 
       {state.error && (
-        <p className="text-xs text-red-600 font-semibold">{state.error}</p>
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <span className="text-red-500 flex-shrink-0">⚠</span>
+          <p className="text-sm text-red-700 font-semibold">{state.error}</p>
+        </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <input
-          name="heslo"
-          type="password"
-          required
-          placeholder="Nové heslo (min. 8 znakov)"
-          autoComplete="new-password"
-          className="border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 min-w-[180px]"
-        />
-        <input
-          name="potvrdit"
-          type="password"
-          required
-          placeholder="Zopakuj heslo"
-          autoComplete="new-password"
-          className="border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 min-w-[180px]"
-        />
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={pending}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors whitespace-nowrap"
-          >
-            {pending ? "…" : "Uložiť"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setOtvoreny(false)}
-            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
-          >
-            Zrušiť
-          </button>
+      {/* Inputy vedľa seba na desktop, pod sebou na mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide">
+            Nové heslo
+          </label>
+          <input
+            name="heslo"
+            type="password"
+            required
+            autoComplete="new-password"
+            placeholder="min. 8 znakov"
+            className="
+              w-full bg-white border-2 border-gray-300
+              rounded-xl px-3.5 py-3
+              text-sm text-gray-900 placeholder:text-gray-400
+              focus:outline-none focus:border-blue-500 focus:bg-white
+              transition-colors
+            "
+          />
         </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide">
+            Potvrdenie hesla
+          </label>
+          <input
+            name="potvrdit"
+            type="password"
+            required
+            autoComplete="new-password"
+            placeholder="zopakuj heslo"
+            className="
+              w-full bg-white border-2 border-gray-300
+              rounded-xl px-3.5 py-3
+              text-sm text-gray-900 placeholder:text-gray-400
+              focus:outline-none focus:border-blue-500 focus:bg-white
+              transition-colors
+            "
+          />
+        </div>
+
       </div>
+
+      {/* Tlačidlá */}
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="submit"
+          disabled={pending}
+          className="
+            min-h-[44px] px-6
+            bg-blue-600 hover:bg-blue-700 active:bg-blue-800
+            disabled:opacity-60 disabled:cursor-not-allowed
+            text-white text-sm font-bold
+            rounded-xl shadow-sm
+            transition-colors
+          "
+        >
+          {pending ? "Ukladám…" : "Uložiť heslo"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOtvoreny(false)}
+          className="
+            min-h-[44px] px-4
+            text-sm font-semibold text-gray-500
+            hover:text-gray-700 hover:bg-gray-200
+            rounded-xl transition-colors
+          "
+        >
+          Zrušiť
+        </button>
+      </div>
+
     </form>
   );
 }
