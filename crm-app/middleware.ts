@@ -1,34 +1,37 @@
-import { type NextRequest, NextResponse } from "next/server";
-
-const VEREJNE   = ["/login"];
-const FINANCNE  = ["/cenove-ponuky", "/naklady", "/reporty"];
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const url = request.nextUrl.clone();
+  const maCookie = request.cookies.has('crm_kolega_id');
 
-  // ── Verejné cesty – vždy voľný prechod ────────────────────────────────
-  if (VEREJNE.some((p) => pathname.startsWith(p)))
+  // Dekódujeme URL, aby sme spoľahlivo prečítali "prihlásenie" s diakritikou
+  const dekodovanaCesta = decodeURIComponent(url.pathname);
+
+  // Ignorujeme statické súbory a API, aby sme nezablokovali aplikáciu
+  if (
+    url.pathname.startsWith('/_next') || 
+    url.pathname.includes('.') ||
+    url.pathname.startsWith('/api')
+  ) {
     return NextResponse.next();
-
-  // ── Autentifikácia – vyžaduje sa pre všetky ostatné cesty ─────────────
-  const kolegaId = request.cookies.get("crm_kolega_id")?.value;
-  if (!kolegaId) {
-    const loginUrl = new URL("/login", request.url);
-    // Zapamätaj pôvodnú cestu, aby sme po prihlásení mohli presmerovať späť
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
   }
 
-  // ── Finančné stránky – vyžaduje sa dodatočné oprávnenie ───────────────
-  if (FINANCNE.some((p) => pathname.startsWith(p))) {
-    if (request.cookies.get("crm_fin")?.value !== "1")
-      return NextResponse.redirect(new URL("/pristup-odmietnuiy", request.url));
+  // 1. Ochrana dashboardu - ak nie je cookie a ide do chránenej zóny
+  if (!maCookie && !dekodovanaCesta.startsWith('/prihlásenie')) {
+    url.pathname = encodeURI('/prihlásenie');
+    return NextResponse.redirect(url);
+  }
+
+  // 2. Ak je prihlásený a pokúša sa ísť znova na login, hodíme ho na dashboard
+  if (maCookie && dekodovanaCesta.startsWith('/prihlásenie')) {
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  // Ochráni všetky cesty okrem: Next.js interných, statických súborov, nahratých fotiek
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|uploads/).*)"],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
