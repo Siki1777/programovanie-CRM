@@ -25,7 +25,6 @@ export async function prihlasit(_prev: LoginState, formData: FormData): Promise<
   const kolega = rows[0];
   // Password check (with type safety)
   if (kolega.heslo != null) {
-    console.log("Db: " + kolega.heslo + " Input: " + heslo);
     const spravne = await bcryptjs.compare(heslo, kolega.heslo);
     if (!spravne) return { error: "Nesprávny e-mail alebo heslo." };
   }
