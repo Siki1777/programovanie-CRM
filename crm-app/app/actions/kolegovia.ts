@@ -40,6 +40,68 @@ export async function pridajKolegu(
   return { success: true };
 }
 
+export type UpravitState = { error?: string; success?: boolean };
+
+export async function upravKolegu(
+  _prev: UpravitState,
+  formData: FormData
+): Promise<UpravitState> {
+  const session = await getSession();
+  if (!session?.vidiFinancie) return { error: "Nemáš oprávnenie." };
+
+  const kolegaId   = (formData.get("kolegaId")   as string)?.trim();
+  const meno       = (formData.get("meno")       as string)?.trim();
+  const priezvisko = (formData.get("priezvisko") as string)?.trim();
+  const email      = (formData.get("email")      as string)?.trim().toLowerCase();
+  const telefon    = (formData.get("telefon")    as string)?.trim() || null;
+
+  if (!kolegaId) return { error: "Chybajúce ID kolegu." };
+  if (!meno || !priezvisko) return { error: "Meno a priezvisko sú povinné." };
+  if (!email || !email.includes("@")) return { error: "Zadaj platný e-mail." };
+
+  const exists = await sql`SELECT id FROM kolega WHERE LOWER(email) = ${email} AND id != ${kolegaId} LIMIT 1`;
+  if (exists.length > 0) return { error: `E-mail ${email} je už obsadený iným kolegom.` };
+
+  await sql`
+    UPDATE kolega
+    SET meno = ${meno}, priezvisko = ${priezvisko}, email = ${email}, telefon = ${telefon}
+    WHERE id = ${kolegaId}
+  `;
+
+  revalidatePath("/nastavenia");
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export type VymazatState = { error?: string; success?: boolean };
+
+export async function vymazKolegu(
+  _prev: VymazatState,
+  formData: FormData
+): Promise<VymazatState> {
+  const session = await getSession();
+  if (!session?.vidiFinancie) return { error: "Nemáš oprávnenie." };
+
+  const kolegaId = (formData.get("kolegaId") as string)?.trim();
+  if (!kolegaId) return { error: "Chybajúce ID kolegu." };
+  if (session.kolegaId === kolegaId) return { error: "Nemôžeš vymazať sám seba." };
+
+  const pocet = await sql<{ cnt: string }[]>`SELECT COUNT(*) AS cnt FROM kolega`;
+  if (Number(pocet[0]?.cnt ?? 0) <= 1)
+    return { error: "Nemôžeš vymazať posledného člena tímu." };
+
+  await sql`DELETE FROM kolega WHERE id = ${kolegaId}`;
+
+  revalidatePath("/nastavenia");
+  return { success: true };
+}
+
+export async function nastavKanal(kolegaId: string, kanal: string): Promise<void> {
+  if (!VALID_KANALY.includes(kanal as (typeof VALID_KANALY)[number])) return;
+  await sql`UPDATE kolega SET "notifikacnyKanal" = ${kanal} WHERE id = ${kolegaId}`;
+  revalidatePath("/nastavenia");
+}
+
 export async function nastavHeslo(
   _prev: HesloState,
   formData: FormData

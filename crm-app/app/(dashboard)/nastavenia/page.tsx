@@ -1,19 +1,12 @@
 import { sql } from "@/lib/db";
-import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
-import { nastavVidiFinancie } from "@/app/actions/session";
 import { Avatar } from "@/components/Avatar";
-import { FotoUploadButton } from "@/components/FotoUploadButton";
 import { PridatKoleguForm } from "./PridatKoleguForm";
 import { NastavHesloForm } from "./NastavHesloForm";
+import { KolegaRiadok } from "./KolegaRiadok";
 
 export const dynamic = "force-dynamic";
 
-const KANALY = [
-  { value: "whatsapp",        label: "WhatsApp",        ikona: "💬" },
-  { value: "email",           label: "E-mail",          ikona: "📧" },
-  { value: "google_kalendar", label: "Google Kalendár", ikona: "📅" },
-] as const;
 
 type Kolega = {
   id: string;
@@ -124,7 +117,7 @@ export default async function NastaveniePage() {
           <div className="flex-1">
             <h2 className="font-bold text-gray-800 text-lg">👥 Kolegovia &amp; notifikácie</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Notifikačný kanál a prístup k financiám. Financie môže meniť iba Admin.
+              Notifikačný kanál a prístup k financiám. Admin môže upraviť alebo vymazať kolegov (✏ / 🗑).
             </p>
           </div>
           <PridatKoleguForm />
@@ -138,101 +131,12 @@ export default async function NastaveniePage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {kolegovia.map((k) => (
-              <div
+              <KolegaRiadok
                 key={k.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4"
-              >
-                {/* Avatar + upload */}
-                <div className="relative flex-shrink-0">
-                  <Avatar
-                    meno={k.meno}
-                    priezvisko={k.priezvisko}
-                    email={k.email}
-                    fotoUrl={k.fotoUrl}
-                    size="md"
-                    className={session?.kolegaId === k.id ? "ring-2 ring-blue-500 ring-offset-1" : ""}
-                  />
-                  <FotoUploadButton typ="kolega" entityId={k.id} variant="overlay" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-gray-900 text-base">
-                      {k.meno} {k.priezvisko}
-                    </p>
-                    {session?.kolegaId === k.id && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
-                        Ty
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <a href={`mailto:${k.email}`} className="text-xs text-blue-600 hover:underline">
-                      {k.email}
-                    </a>
-                    {k.telefon && (
-                      <a href={`tel:${k.telefon}`} className="text-xs text-gray-400 hover:text-gray-600">
-                        {k.telefon}
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-
-                  {/* Finance toggle – len admin */}
-                  {jeAdmin && (
-                    <form
-                      action={async () => {
-                        "use server";
-                        await nastavVidiFinancie(k.id, !k.vidiFinancie);
-                        revalidatePath("/nastavenia");
-                        revalidatePath("/", "layout");
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        className={[
-                          "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border-2 transition-all",
-                          k.vidiFinancie
-                            ? "bg-green-600 border-green-600 text-white"
-                            : "border-gray-200 text-gray-400 hover:border-green-400 hover:text-green-600",
-                        ].join(" ")}
-                      >
-                        💶 {k.vidiFinancie ? "Financie ✓" : "Financie"}
-                      </button>
-                    </form>
-                  )}
-
-                  {/* Kanál */}
-                  {KANALY.map((opt) => {
-                    const aktivny = k.notifikacnyKanal === opt.value;
-                    return (
-                      <form
-                        key={opt.value}
-                        action={async () => {
-                          "use server";
-                          await sql`UPDATE kolega SET "notifikacnyKanal" = ${opt.value} WHERE id = ${k.id}`;
-                          revalidatePath("/nastavenia");
-                        }}
-                      >
-                        <button
-                          type="submit"
-                          className={[
-                            "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border-2 transition-all",
-                            aktivny
-                              ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                              : "border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600",
-                          ].join(" ")}
-                        >
-                          {opt.ikona} {opt.label}
-                          {aktivny && <span className="opacity-80">✓</span>}
-                        </button>
-                      </form>
-                    );
-                  })}
-                </div>
-              </div>
+                kolega={k}
+                jeAdmin={jeAdmin}
+                jeAktivny={session?.kolegaId === k.id}
+              />
             ))}
           </div>
         )}
@@ -241,7 +145,7 @@ export default async function NastaveniePage() {
           {kolegovia.length} člen{kolegovia.length === 1 ? "" : "ov"} tímu
           {!jeAdmin && (
             <span className="text-orange-500 ml-2">
-              · Zmeny prístupu k financiám môže robiť iba Admin (💶)
+              · Zmeny môže robiť iba Admin (💶)
             </span>
           )}
         </div>

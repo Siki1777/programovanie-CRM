@@ -21,4 +21,5 @@ export async function nastavVidiFinancie(
     });
     revalidatePath("/", "layout");
   }
+  revalidatePath("/nastavenia");
 }
