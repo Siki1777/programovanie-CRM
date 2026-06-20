@@ -198,7 +198,7 @@ export function PrilohaUpload({
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <a
-                  href={p.url}
+                  href={`/api/priloha-download?url=${encodeURIComponent(p.url)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="min-h-[36px] px-3 flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-colors"

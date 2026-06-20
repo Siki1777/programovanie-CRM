@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const blob = await put(
       `crm/zakazky/${zakazkaId}/${Date.now()}-${safeName}`,
       file,
-      { access: "public", contentType: file.type }
+      { access: "private", contentType: file.type }
     );
 
     return NextResponse.json({ url: blob.url });
