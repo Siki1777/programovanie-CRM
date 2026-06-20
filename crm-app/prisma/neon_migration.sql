@@ -12,12 +12,13 @@
 
 
 -- ── 1. Cleanup (prázdna DB → všetky DROP sú no-op) ──────────────────
-DROP TABLE IF EXISTS uloha         CASCADE;
-DROP TABLE IF EXISTS cenova_ponuka CASCADE;
-DROP TABLE IF EXISTS naklad        CASCADE;
-DROP TABLE IF EXISTS zakazka       CASCADE;
-DROP TABLE IF EXISTS zakaznik      CASCADE;
-DROP TABLE IF EXISTS kolega        CASCADE;
+DROP TABLE IF EXISTS uloha              CASCADE;
+DROP TABLE IF EXISTS cenova_ponuka      CASCADE;
+DROP TABLE IF EXISTS naklad             CASCADE;
+DROP TABLE IF EXISTS zakazka            CASCADE;
+DROP TABLE IF EXISTS zakaznik           CASCADE;
+DROP TABLE IF EXISTS kolega             CASCADE;
+DROP TABLE IF EXISTS checklist_template CASCADE;
 
 
 -- ── 2. Schéma: zakaznik ─────────────────────────────────────────────
@@ -48,7 +49,7 @@ CREATE TABLE zakazka (
   "serialoveCislo"      TEXT,
   "podpisDataUrl"       TEXT,
   "nasledujucaRevizia"  DATE,
-  "checklistObhliadka"  JSONB DEFAULT '{}',
+  "checklistObhliadka"  JSONB DEFAULT '[]',
   "createdAt"           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   "updatedAt"           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -110,7 +111,16 @@ CREATE TABLE uloha (
 );
 
 
--- ── 8. Seed: Kolegovia ──────────────────────────────────────────────
+-- ── 8. Schéma: checklist_template ──────────────────────────────────
+CREATE TABLE checklist_template (
+  id          TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  nazov       TEXT        NOT NULL,
+  polozky     JSONB       NOT NULL DEFAULT '[]',
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+-- ── 9. Seed: Kolegovia ──────────────────────────────────────────────
 -- UPRAV mená, telefóny a e-maily podľa skutočného tímu!
 -- Martin (k-1) je Admin (vidi_financie = TRUE) – musí dostať heslo cez /nastavenia.
 INSERT INTO kolega (id, meno, priezvisko, telefon, email, vidi_financie) VALUES
@@ -121,7 +131,17 @@ INSERT INTO kolega (id, meno, priezvisko, telefon, email, vidi_financie) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 
--- ── 9. Seed: Ukážkové dáta (VOLITEĽNÉ) ─────────────────────────────
+-- ── 10. Seed: Checklistové šablóny ─────────────────────────────────
+INSERT INTO checklist_template (id, nazov, polozky) VALUES
+  ('ct-1', 'Tepelné čerpadlo (vzduch-voda)', '["Umiestnenie vonkajšej jednotky – priestor a vzdialenosť od susedov","Dostupnosť pre montáž a budúci servis","Stav elektroinštalácie (1-fáza / 3-fáza, istič, kábel)","Existujúca sústava ÚK – radiátory alebo podlahové kúrenie","Max. teplota vykurovanej vody (≤ 55 °C pre TČ)","Rozmery technickej miestnosti","Prívod a tlak studenej vody","Odvod kondenzátu do kanalizácie","Stav zásobníka TÚV","Vzdialenosť od okien a obytných priestorov (hluk)"]'::jsonb),
+  ('ct-2', 'Klimatizácia / Multi-split', '["Miesto inštalácie vonkajšej jednotky","Miesto inštalácie vnútornej jednotky – typ montáže","Dĺžka a trasa vedenia chladiva","Stav elektrickej prípojky (230 V, istič)","Odvod kondenzátu z vnútornej jednotky","Priechodka cez stenu / strop – hrúbka a materiál","Klimatizovaná plocha (m²) a počet miestností","Multi-split – počet vnútorných jednotiek"]'::jsonb),
+  ('ct-3', 'Komín', '["Výška komína nad hrebeňom strechy","Vnútorný priemer komínového prierezu (DN)","Stav existujúcej vložky / výmurovky","Kontrola ťahu komína","Prístupnosť revízneho otvoru","Vzdialenosť od horľavých konštrukcií","Typ paliva (drevo, plyn, pelety)","Plánovaný spotrebič (kotol, krb, sporák)"]'::jsonb),
+  ('ct-4', 'Krb / Krbová vložka', '["Rozmer otvoru v murive (šírka × výška × hĺbka)","Rozmer komínového hrdla (DN)","Typ paliva – drevo alebo pelety","Výhrevnosť miestnosti – objem priestoru (m³)","Prívod spaľovacieho vzduchu","Vzdialenosť krbovej vložky od horľavých materiálov","Potreba vybúrania existujúceho krbu","Typ podlahy pred krbom – protipožiarna platňa"]'::jsonb),
+  ('ct-5', 'Fotovoltika', '["Orientácia strechy (J / JZ / JV)","Sklon strechy (stupne)","Typ strešnej krytiny (škridla, plech, fólia)","Zaclonenie – stromy, komíny, susedné budovy","Stav elektroinštalácie – rozvádzač a hlavné istenie","Umiestnenie invertorov a prípadnej batérie","Požiadavky – ostrovný alebo sieťový systém","Statika strechy – potreba statického posudku","Trasa DC káblov zo strechy k invertoru"]'::jsonb)
+ON CONFLICT (id) DO NOTHING;
+
+
+-- ── 11. Seed: Ukážkové dáta (VOLITEĽNÉ) ─────────────────────────────
 -- Ak NECHCEŠ testovacie zákazky a zákazníkov v produkcii,
 -- vymaž alebo zakomentuj nasledujúci blok.
 
@@ -161,6 +181,7 @@ INSERT INTO uloha ("zakazkaId", "kolegaId", nazov, splnena, termin) VALUES
 
 -- ── Koniec migrácie ─────────────────────────────────────────────────
 SELECT '✓ Migrácia OK' AS status;
-SELECT 'Kolegovia: ' || COUNT(*) AS info FROM kolega;
-SELECT 'Zákazníci: ' || COUNT(*) AS info FROM zakaznik;
-SELECT 'Zákazky:   ' || COUNT(*) AS info FROM zakazka;
+SELECT 'Kolegovia:  ' || COUNT(*) AS info FROM kolega;
+SELECT 'Zákazníci:  ' || COUNT(*) AS info FROM zakaznik;
+SELECT 'Zákazky:    ' || COUNT(*) AS info FROM zakazka;
+SELECT 'Šablóny:    ' || COUNT(*) AS info FROM checklist_template;

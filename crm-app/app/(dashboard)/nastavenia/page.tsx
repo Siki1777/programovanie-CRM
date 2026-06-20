@@ -4,6 +4,7 @@ import { Avatar } from "@/components/Avatar";
 import { PridatKoleguForm } from "./PridatKoleguForm";
 import { NastavHesloForm } from "./NastavHesloForm";
 import { KolegaRiadok } from "./KolegaRiadok";
+import { SpravaSablon } from "./SpravaSablon";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,10 @@ type Kolega = {
   maHeslo: boolean;
 };
 
+type Sablona = { id: string; nazov: string; polozky: string[] };
+
 export default async function NastaveniePage() {
-  const [kolegovia, session] = await Promise.all([
+  const [kolegovia, session, sablony] = await Promise.all([
     sql<Kolega[]>`
       SELECT id, meno, priezvisko, email, telefon,
              foto_url          AS "fotoUrl",
@@ -32,6 +35,8 @@ export default async function NastaveniePage() {
       ORDER BY meno, priezvisko
     `,
     getSession(),
+    sql<Sablona[]>`SELECT id, nazov, polozky FROM checklist_template ORDER BY nazov`
+      .catch(() => [] as Sablona[]),
   ]);
 
   const jeAdmin = session?.vidiFinancie ?? false;
@@ -167,6 +172,21 @@ export default async function NastaveniePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Správa checklistových vzor (len admin) ──────────────────────── */}
+      {jeAdmin && (
+        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-bold text-gray-800 text-lg">📋 Správa checklistových vzor</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Vytvor vzory checklistov pre každú technológiu. Pri obhliadke ich aplikuješ jedným kliknutím.
+            </p>
+          </div>
+          <div className="px-6 py-4">
+            <SpravaSablon sablony={sablony} />
+          </div>
+        </section>
+      )}
 
       {/* ── Vzorec kalkulácie (len admin) ───────────────────────────────── */}
       {jeAdmin && (

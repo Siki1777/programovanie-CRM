@@ -7,7 +7,7 @@ export type ZakazkaRow = {
   serialoveCislo: string | null;
   podpisDataUrl: string | null;
   nasledujucaRevizia: Date | null;
-  checklistObhliadka: Record<string, boolean>;
+  checklistObhliadka: { id: string; text: string; splnena: boolean }[];
   createdAt: Date;
   updatedAt: Date;
   // Zákazník (JOIN)

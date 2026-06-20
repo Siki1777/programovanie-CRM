@@ -49,21 +49,6 @@ export async function vytvorZakazku(
   redirect(`/zakazky?nova=${zakazka.id}`);
 }
 
-// ── Tab 2: Checklist položka ─────────────────────────────────────────────────
-export async function toggleChecklist(
-  zakazkaId: string,
-  klic: string,
-  currentValue: boolean
-): Promise<void> {
-  await sql`
-    UPDATE zakazka
-    SET "checklistObhliadka" = COALESCE("checklistObhliadka", '{}'::jsonb)
-      || jsonb_build_object(${klic}, ${!currentValue})
-    WHERE id = ${zakazkaId}
-  `;
-  revalidatePath(`/zakazky/${zakazkaId}`);
-}
-
 // ── Tab 4 + Kalendár: Prepnutie splnenia úlohy ──────────────────────────────
 export async function toggleUloha(
   ulohaId: string,
