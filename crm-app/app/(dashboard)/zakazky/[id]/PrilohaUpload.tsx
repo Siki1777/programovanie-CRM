@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { upload } from "@vercel/blob/client";
 import { ulozPrilohuMetadata, vymazPrilohu } from "@/app/actions/prilohy";
 import { formatDatum } from "@/lib/formatters";
 
@@ -21,12 +20,12 @@ function formatVelkost(bytes: number): string {
 }
 
 function ikonaSuboru(mime: string): string {
-  if (mime === "application/pdf")                                  return "📕";
-  if (mime.includes("word"))                                       return "📝";
-  if (mime.includes("excel") || mime.includes("spreadsheet"))     return "📊";
+  if (mime === "application/pdf")                                   return "📕";
+  if (mime.includes("word"))                                        return "📝";
+  if (mime.includes("excel") || mime.includes("spreadsheet"))      return "📊";
   if (mime.includes("powerpoint") || mime.includes("presentation")) return "📑";
-  if (mime.startsWith("image/"))                                   return "🖼";
-  if (mime === "text/plain")                                       return "📄";
+  if (mime.startsWith("image/"))                                    return "🖼";
+  if (mime === "text/plain")                                        return "📄";
   return "📎";
 }
 
@@ -66,8 +65,8 @@ export function PrilohaUpload({
       setUploadError(`Nepodporovaný formát súboru (${file.type}).`);
       return;
     }
-    if (file.size > 25 * 1024 * 1024) {
-      setUploadError("Súbor je príliš veľký (max 25 MB).");
+    if (file.size > 4 * 1024 * 1024) {
+      setUploadError("Súbor je príliš veľký (max 4 MB).");
       return;
     }
 
@@ -76,23 +75,20 @@ export function PrilohaUpload({
     setUploading(true);
 
     try {
-      const safeName = file.name
-        .replace(/[^a-zA-Z0-9._\-]/g, "_")
-        .replace(/_+/g, "_")
-        .slice(0, 100);
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("zakazkaId", zakazkaId);
 
-      const blob = await upload(
-        `crm/zakazky/${zakazkaId}/${Date.now()}-${safeName}`,
-        file,
-        { access: "public", handleUploadUrl: "/api/priloha-upload" }
-      );
+      const res  = await fetch("/api/priloha-upload", { method: "POST", body: fd });
+      const data = await res.json() as { url?: string; error?: string };
+
+      if (!res.ok || !data.url) {
+        setUploadError(data.error ?? "Nahrávanie zlyhalo.");
+        return;
+      }
 
       const result = await ulozPrilohuMetadata(
-        zakazkaId,
-        file.name,
-        blob.url,
-        file.size,
-        file.type
+        zakazkaId, file.name, data.url, file.size, file.type
       );
 
       if (result.error) setUploadError(result.error);
@@ -129,7 +125,7 @@ export function PrilohaUpload({
       <div>
         <h2 className="text-lg font-bold text-gray-800">📎 Priložené súbory</h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          PDF ponuky, výkresy, zmluvy. Max 25 MB na súbor.
+          PDF ponuky, výkresy, zmluvy. Max 4 MB na súbor.
         </p>
       </div>
 
