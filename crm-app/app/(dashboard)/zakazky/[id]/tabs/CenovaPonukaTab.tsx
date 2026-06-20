@@ -2,6 +2,7 @@ import { sql } from "@/lib/db";
 import { formatMena } from "@/lib/formatters";
 import type { ZakazkaRow, NakladRow } from "../types";
 import { CenovaPonukaKlient, type CenovaPonukaRow } from "../CenovaPonukaKlient";
+import { PrilohaUpload, type PrilohaRow } from "../PrilohaUpload";
 
 const KATEGORIE: Record<string, { label: string; farba: string }> = {
   MATERIAL: { label: "Materiál",  farba: "bg-blue-100 text-blue-700"   },
@@ -17,18 +18,28 @@ export async function CenovaPonukaTab({
   zakazka: ZakazkaRow;
   naklady: NakladRow[];
 }) {
-  const ponuky = await sql<CenovaPonukaRow[]>`
-    SELECT id, verzia,
-           "cenaZariadenie"::text AS "cenaZariadenie",
-           "cenaMaterial"::text   AS "cenaMaterial",
-           marza::text            AS marza,
-           "celkovaCena"::text    AS "celkovaCena",
-           schvalena,
-           "createdAt"
-    FROM   cenova_ponuka
-    WHERE  "zakazkaId" = ${zakazka.id}
-    ORDER  BY verzia DESC
-  `.catch(() => [] as CenovaPonukaRow[]);
+  const [ponuky, prilohy] = await Promise.all([
+    sql<CenovaPonukaRow[]>`
+      SELECT id, verzia,
+             "cenaZariadenie"::text AS "cenaZariadenie",
+             "cenaMaterial"::text   AS "cenaMaterial",
+             marza::text            AS marza,
+             "celkovaCena"::text    AS "celkovaCena",
+             schvalena,
+             "createdAt"
+      FROM   cenova_ponuka
+      WHERE  "zakazkaId" = ${zakazka.id}
+      ORDER  BY verzia DESC
+    `.catch(() => [] as CenovaPonukaRow[]),
+    sql<PrilohaRow[]>`
+      SELECT id, nazov, url, velkost,
+             mime_typ AS "mimeTyp",
+             "createdAt"
+      FROM   priloha
+      WHERE  "zakazkaId" = ${zakazka.id}
+      ORDER  BY "createdAt" DESC
+    `.catch(() => [] as PrilohaRow[]),
+  ]);
 
   const schvalena = ponuky.find((p) => p.schvalena);
   const celkovaCena = schvalena ? Number(schvalena.celkovaCena) : null;
@@ -74,6 +85,9 @@ export async function CenovaPonukaTab({
       </div>
 
       {/* ── Čistý zisk (iba ak je schválená ponuka) ─────────────────── */}
+      {/* ── Priložené súbory ─────────────────────────────────────── */}
+      <PrilohaUpload zakazkaId={zakazka.id} prilohy={prilohy} />
+
       {cistyZisk !== null && (
         <div className={`rounded-2xl p-5 border ${
           cistyZisk >= 0 ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
