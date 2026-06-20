@@ -284,7 +284,7 @@ export function CenovaPonukaKlient({
 
       {maSchvalenú && (
         <p className="text-xs text-gray-400 text-center pb-2">
-          💡 Zákazku môžeš ďalej posunúť ručne v záhlaví cez zmenu fázy, alebo pokračuj v záložke „Schválenie &amp; Plán".
+          💡 Zákazku môžeš ďalej posunúť ručne v záhlaví cez zmenu fázy, alebo pokračuj v záložke Schválenie &amp; Plán.
         </p>
       )}
     </div>
