@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useActionState, useTransition } from "react";
-import { nahrajPrilohu, vymazPrilohu, type PrilohaState } from "@/app/actions/prilohy";
+import { useRef, useState, useTransition } from "react";
+import { upload } from "@vercel/blob/client";
+import { ulozPrilohuMetadata, vymazPrilohu } from "@/app/actions/prilohy";
 import { formatDatum } from "@/lib/formatters";
 
 export type PrilohaRow = {
@@ -14,23 +15,37 @@ export type PrilohaRow = {
 };
 
 function formatVelkost(bytes: number): string {
-  if (bytes < 1024)          return `${bytes} B`;
-  if (bytes < 1024 * 1024)   return `${Math.round(bytes / 1024)} kB`;
+  if (bytes < 1024)        return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function ikonaSuboru(mime: string): string {
-  if (mime === "application/pdf")          return "📕";
-  if (mime.includes("word"))               return "📝";
-  if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊";
+  if (mime === "application/pdf")                                  return "📕";
+  if (mime.includes("word"))                                       return "📝";
+  if (mime.includes("excel") || mime.includes("spreadsheet"))     return "📊";
   if (mime.includes("powerpoint") || mime.includes("presentation")) return "📑";
-  if (mime.startsWith("image/"))           return "🖼";
-  if (mime === "text/plain")               return "📄";
+  if (mime.startsWith("image/"))                                   return "🖼";
+  if (mime === "text/plain")                                       return "📄";
   return "📎";
 }
 
 const POVOLENE_PRIPONY =
   ".pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .jpg, .jpeg, .png, .webp, .txt";
+
+const POVOLENE_MIME = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "text/plain",
+]);
 
 export function PrilohaUpload({
   zakazkaId,
@@ -40,23 +55,54 @@ export function PrilohaUpload({
   prilohy: PrilohaRow[];
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [deletePending, startDeleteTransition] = useTransition();
+  const [dragOver, setDragOver]       = useState(false);
+  const [uploading, setUploading]     = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadOk, setUploadOk]       = useState(false);
+  const [deletePending, startDelete]  = useTransition();
 
-  const [uploadState, uploadAction, uploadPending] = useActionState<PrilohaState, FormData>(
-    nahrajPrilohu, {}
-  );
-
-  function odosliSubor(file: File) {
-    if (file.size > 25 * 1024 * 1024) {
-      alert("Súbor je príliš veľký (max 25 MB).");
+  async function odosliSubor(file: File) {
+    if (!POVOLENE_MIME.has(file.type)) {
+      setUploadError(`Nepodporovaný formát súboru (${file.type}).`);
       return;
     }
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("zakazkaId", zakazkaId);
-    uploadAction(fd);
-    if (inputRef.current) inputRef.current.value = "";
+    if (file.size > 25 * 1024 * 1024) {
+      setUploadError("Súbor je príliš veľký (max 25 MB).");
+      return;
+    }
+
+    setUploadError(null);
+    setUploadOk(false);
+    setUploading(true);
+
+    try {
+      const safeName = file.name
+        .replace(/[^a-zA-Z0-9._\-]/g, "_")
+        .replace(/_+/g, "_")
+        .slice(0, 100);
+
+      const blob = await upload(
+        `crm/zakazky/${zakazkaId}/${Date.now()}-${safeName}`,
+        file,
+        { access: "public", handleUploadUrl: "/api/priloha-upload" }
+      );
+
+      const result = await ulozPrilohuMetadata(
+        zakazkaId,
+        file.name,
+        blob.url,
+        file.size,
+        file.type
+      );
+
+      if (result.error) setUploadError(result.error);
+      else              setUploadOk(true);
+    } catch {
+      setUploadError("Nahrávanie zlyhalo. Skúste znova.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -73,7 +119,7 @@ export function PrilohaUpload({
 
   function handleVymaz(p: PrilohaRow) {
     if (!confirm(`Zmazať súbor „${p.nazov}"? Táto akcia je nevratná.`)) return;
-    startDeleteTransition(async () => {
+    startDelete(async () => {
       await vymazPrilohu(p.id, p.url, zakazkaId);
     });
   }
@@ -87,16 +133,15 @@ export function PrilohaUpload({
         </p>
       </div>
 
-      {/* Upload zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !uploading && inputRef.current?.click()}
         className={[
           "flex flex-col items-center justify-center gap-2 min-h-[100px]",
           "border-2 border-dashed rounded-xl cursor-pointer transition-colors",
-          uploadPending
+          uploading
             ? "border-blue-400 bg-blue-50 pointer-events-none"
             : dragOver
             ? "border-blue-500 bg-blue-50"
@@ -109,9 +154,9 @@ export function PrilohaUpload({
           accept={POVOLENE_PRIPONY}
           className="sr-only"
           onChange={handleInputChange}
-          disabled={uploadPending}
+          disabled={uploading}
         />
-        {uploadPending ? (
+        {uploading ? (
           <>
             <span className="text-2xl animate-pulse">⏳</span>
             <p className="text-sm text-blue-600 font-semibold">Nahrávam súbor…</p>
@@ -127,16 +172,15 @@ export function PrilohaUpload({
         )}
       </div>
 
-      {uploadState.error && (
+      {uploadError && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
-          ⚠ {uploadState.error}
+          ⚠ {uploadError}
         </div>
       )}
-      {uploadState.success && (
+      {uploadOk && (
         <p className="text-sm text-green-600">✓ Súbor bol úspešne nahraný.</p>
       )}
 
-      {/* Zoznam nahraných súborov */}
       {prilohy.length === 0 ? (
         <p className="text-sm text-gray-400 text-center py-2">
           Zatiaľ žiadne priložené súbory.
@@ -148,7 +192,6 @@ export function PrilohaUpload({
               <span className="text-2xl flex-shrink-0 leading-none">
                 {ikonaSuboru(p.mimeTyp)}
               </span>
-
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800 truncate" title={p.nazov}>
                   {p.nazov}
@@ -157,21 +200,18 @@ export function PrilohaUpload({
                   {formatVelkost(p.velkost)} · {formatDatum(p.createdAt)}
                 </p>
               </div>
-
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <a
                   href={p.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="min-h-[36px] px-3 flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-colors"
-                  title="Otvoriť / stiahnuť"
                 >
                   ↓ Stiahnuť
                 </a>
                 <button
                   onClick={() => handleVymaz(p)}
                   disabled={deletePending}
-                  title="Zmazať súbor"
                   className="min-h-[36px] w-9 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40"
                 >
                   🗑
