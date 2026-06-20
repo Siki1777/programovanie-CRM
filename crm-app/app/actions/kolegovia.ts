@@ -49,22 +49,25 @@ export async function upravKolegu(
   const session = await getSession();
   if (!session?.vidiFinancie) return { error: "Nemáš oprávnenie." };
 
-  const kolegaId   = (formData.get("kolegaId")   as string)?.trim();
-  const meno       = (formData.get("meno")       as string)?.trim();
-  const priezvisko = (formData.get("priezvisko") as string)?.trim();
-  const email      = (formData.get("email")      as string)?.trim().toLowerCase();
-  const telefon    = (formData.get("telefon")    as string)?.trim() || null;
+  const kolegaId    = (formData.get("kolegaId")    as string)?.trim();
+  const meno        = (formData.get("meno")        as string)?.trim();
+  const priezvisko  = (formData.get("priezvisko")  as string)?.trim();
+  const email       = (formData.get("email")       as string)?.trim().toLowerCase();
+  const telefon     = (formData.get("telefon")     as string)?.trim() || null;
+  const googleEmail = (formData.get("googleEmail") as string)?.trim().toLowerCase() || null;
 
   if (!kolegaId) return { error: "Chybajúce ID kolegu." };
   if (!meno || !priezvisko) return { error: "Meno a priezvisko sú povinné." };
   if (!email || !email.includes("@")) return { error: "Zadaj platný e-mail." };
+  if (googleEmail && !googleEmail.includes("@")) return { error: "Zadaj platný Google e-mail." };
 
   const exists = await sql`SELECT id FROM kolega WHERE LOWER(email) = ${email} AND id != ${kolegaId} LIMIT 1`;
   if (exists.length > 0) return { error: `E-mail ${email} je už obsadený iným kolegom.` };
 
   await sql`
     UPDATE kolega
-    SET meno = ${meno}, priezvisko = ${priezvisko}, email = ${email}, telefon = ${telefon}
+    SET meno = ${meno}, priezvisko = ${priezvisko}, email = ${email},
+        telefon = ${telefon}, google_email = ${googleEmail}
     WHERE id = ${kolegaId}
   `;
 

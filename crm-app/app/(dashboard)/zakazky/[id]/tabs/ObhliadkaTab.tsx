@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import type { ZakazkaRow } from "../types";
 import { ChecklistObhliadka, type PolozkaChecklistu, type ChecklistSablona } from "../ChecklistObhliadka";
+import { ObhliadkaPlanForm } from "../ObhliadkaPlanForm";
 
 function parseChecklist(raw: unknown): PolozkaChecklistu[] {
   if (Array.isArray(raw)) return raw as PolozkaChecklistu[];
@@ -8,14 +9,27 @@ function parseChecklist(raw: unknown): PolozkaChecklistu[] {
 }
 
 export async function ObhliadkaTab({ zakazka }: { zakazka: ZakazkaRow }) {
-  const sablony = await sql<ChecklistSablona[]>`
-    SELECT id, nazov, polozky FROM checklist_template ORDER BY nazov
-  `.catch(() => [] as ChecklistSablona[]);
+  const [sablony, kolegovia] = await Promise.all([
+    sql<ChecklistSablona[]>`
+      SELECT id, nazov, polozky FROM checklist_template ORDER BY nazov
+    `.catch(() => [] as ChecklistSablona[]),
+    sql<{ id: string; meno: string; priezvisko: string }[]>`
+      SELECT id, meno, priezvisko FROM kolega ORDER BY meno
+    `.catch(() => []),
+  ]);
 
   const polozky = parseChecklist(zakazka.checklistObhliadka);
 
   return (
     <div className="space-y-4">
+
+      <ObhliadkaPlanForm
+        zakazkaId={zakazka.id}
+        datumObhliadky={zakazka.datumObhliadky}
+        technikId={zakazka.technikId}
+        calendarEventId={zakazka.calendarEventId}
+        kolegovia={kolegovia}
+      />
 
       <ChecklistObhliadka
         zakazkaId={zakazka.id}

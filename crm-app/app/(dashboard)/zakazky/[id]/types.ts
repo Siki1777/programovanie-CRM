@@ -8,6 +8,9 @@ export type ZakazkaRow = {
   podpisDataUrl: string | null;
   nasledujucaRevizia: Date | null;
   checklistObhliadka: { id: string; text: string; splnena: boolean }[];
+  datumObhliadky:     Date | null;
+  technikId:          string | null;
+  calendarEventId:    string | null;
   createdAt: Date;
   updatedAt: Date;
   // Zákazník (JOIN)

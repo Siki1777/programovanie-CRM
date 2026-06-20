@@ -50,6 +50,9 @@ CREATE TABLE zakazka (
   "podpisDataUrl"       TEXT,
   "nasledujucaRevizia"  DATE,
   "checklistObhliadka"  JSONB DEFAULT '[]',
+  datum_obhliadky       TIMESTAMPTZ,
+  technik_id            TEXT,                -- FK na kolega (pridaný po CREATE kolega)
+  calendar_event_id     TEXT,
   "createdAt"           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   "updatedAt"           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -94,7 +97,8 @@ CREATE TABLE kolega (
     CHECK ("notifikacnyKanal" IN ('whatsapp', 'email', 'google_kalendar')),
   vidi_financie      BOOLEAN NOT NULL DEFAULT FALSE,
   foto_url           TEXT,
-  heslo              TEXT
+  heslo              TEXT,
+  google_email       TEXT
 );
 
 
@@ -118,6 +122,11 @@ CREATE TABLE checklist_template (
   polozky     JSONB       NOT NULL DEFAULT '[]',
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- FK: zakazka.technik_id → kolega (po oboch tabulkách)
+ALTER TABLE zakazka
+  ADD CONSTRAINT fk_zakazka_technik
+  FOREIGN KEY (technik_id) REFERENCES kolega(id) ON DELETE SET NULL;
 
 
 -- ── 9. Seed: Kolegovia ──────────────────────────────────────────────

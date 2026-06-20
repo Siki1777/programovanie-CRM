@@ -27,6 +27,7 @@ type KolegaData = {
   fotoUrl: string | null;
   notifikacnyKanal: string;
   vidiFinancie: boolean;
+  googleEmail: string | null;
 };
 
 export function KolegaRiadok({
@@ -238,6 +239,20 @@ export function KolegaRiadok({
                 type="tel"
                 defaultValue={kolega.telefon ?? ""}
                 placeholder="+421 xxx xxx xxx"
+                className="w-full bg-white border-2 border-gray-300 rounded-xl px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide">
+                Google e-mail pre kalendár{" "}
+                <span className="font-normal normal-case text-gray-400">(nepovinné – pre pozvánky na obhliadky)</span>
+              </label>
+              <input
+                name="googleEmail"
+                type="email"
+                defaultValue={kolega.googleEmail ?? ""}
+                placeholder="meno@gmail.com"
                 className="w-full bg-white border-2 border-gray-300 rounded-xl px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>

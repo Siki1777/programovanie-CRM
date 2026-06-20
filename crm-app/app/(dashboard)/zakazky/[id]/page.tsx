@@ -23,7 +23,10 @@ async function fetchDetail(id: string) {
       SELECT
         z.id, z.cislo, z.faza, z.technologia, z.poznamka,
         z."serialoveCislo", z."podpisDataUrl", z."nasledujucaRevizia",
-        COALESCE(z."checklistObhliadka", '{}'::jsonb) AS "checklistObhliadka",
+        COALESCE(z."checklistObhliadka", '[]'::jsonb) AS "checklistObhliadka",
+        z.datum_obhliadky   AS "datumObhliadky",
+        z.technik_id        AS "technikId",
+        z.calendar_event_id AS "calendarEventId",
         z."createdAt", z."updatedAt",
         zk.id AS "zakaznikId",
         zk.meno, zk.priezvisko, zk.telefon, zk.email, zk.adresa,

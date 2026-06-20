@@ -19,6 +19,7 @@ type Kolega = {
   notifikacnyKanal: string;
   vidiFinancie: boolean;
   maHeslo: boolean;
+  googleEmail: string | null;
 };
 
 type Sablona = { id: string; nazov: string; polozky: string[] };
@@ -30,7 +31,8 @@ export default async function NastaveniePage() {
              foto_url          AS "fotoUrl",
              "notifikacnyKanal",
              vidi_financie     AS "vidiFinancie",
-             (heslo IS NOT NULL) AS "maHeslo"
+             (heslo IS NOT NULL) AS "maHeslo",
+             google_email      AS "googleEmail"
       FROM kolega
       ORDER BY meno, priezvisko
     `,
